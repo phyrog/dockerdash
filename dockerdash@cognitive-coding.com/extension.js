@@ -10,12 +10,39 @@ let bgContainer, container, timer, dockers;
 let timeout = 10;
 
 function _updateDisplay() {
-  let output = GLib.spawn_command_line_sync("docker ps");
-  let parsed_output = _parseOutput(output[1].toString()).map(function(ar) {
-    return ar[2] + ": " + ar[1] + "\n  " + ar[0];
-  }).join("\n");
+  let output = GLib.spawn_command_line_sync("docker ps --no-trunc");
+  let parsed_output = _parseOutput(output[1].toString());
 
-  container.set_text(parsed_output);
+  if(container) {
+    bgContainer.remove_actor(container);
+  }
+
+  container = new St.BoxLayout({ style_class: 'dockerdash-container' });
+  container.set_vertical(true);
+  bgContainer.add_actor(container);
+
+  for(var i = 0; i < parsed_output.length; i++) {
+    let innercontainer = new St.BoxLayout({ style_class: 'dockerdash-docker-container' });
+    innercontainer.set_vertical(true);
+    let titleline = new St.BoxLayout({ style_class: 'dockerdash-docker-titleline' });
+    let titletext = new St.Label({ style_class: 'dockerdash-docker-name', text: parsed_output[i][2] });
+    let uptimetext = new St.Label({ style_class: 'dockerdash-docker-uptime', text: parsed_output[i][1] });
+    uptimetext.set_x_expand(true);
+    let commandtext = new St.Label({ style_class: 'dockerdash-docker-command', text: parsed_output[i][0] });
+
+    container.add_actor(innercontainer);
+    innercontainer.add_actor(titleline);
+    titleline.add_actor(titletext);
+    titleline.add_actor(uptimetext);
+    innercontainer.add_actor(commandtext);
+  }
+
+  container.opacity = 255;
+
+  let monitor = Main.layoutManager.primaryMonitor;
+
+  container.set_position(monitor.x + monitor.width - container.width,
+                         monitor.y + Math.floor(monitor.height / 2 - container.height / 2));
 }
 
 function _parseOutput(out) {
@@ -30,8 +57,8 @@ function _parseOutput(out) {
   let output = [];
 
   for(var i = 1; i < lines.length; i++) {
-    output.push([lines[i].substring(command_start_idx, command_end_idx).trim(),
-                 lines[i].substring(status_start_idx, status_end_idx).trim(),
+    output.push([lines[i].substring(command_start_idx, command_end_idx).trim().slice(1,-1),
+                 lines[i].substring(status_start_idx, status_end_idx).trim().slice(3),
                  lines[i].substring(names_start_idx).trim()]);
   }
 
@@ -46,21 +73,10 @@ function _autorefresh() {
 }
 
 function _showContainer() {
-    if (!container) {
-        bgContainer = Main.uiGroup.get_child_at_index(0).get_child_at_index(0);
-        container = new St.Label({ style_class: 'dashboard-container', text: "dashboard" });
-        bgContainer.add_actor(container);
-    }
+    bgContainer = Main.uiGroup.get_child_at_index(0).get_child_at_index(0);
 
     _updateDisplay();
     _autorefresh();
-
-    container.opacity = 255;
-
-    let monitor = Main.layoutManager.primaryMonitor;
-
-    container.set_position(monitor.x + monitor.width - container.width,
-                           monitor.y + Math.floor(monitor.height / 2 - container.height / 2));
 }
 
 function _hideContainer() {

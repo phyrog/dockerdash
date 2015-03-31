@@ -1,8 +1,23 @@
 
-.dashboard-container {
+.dockerdash-container {
     font-size: 15px;
     font-weight: bold;
     color: rgba(255, 255, 255, 0.5);
     padding: .5em;
-    width: 400px;
+    max-width: 300px;
+    padding-right: 2em;
+}
+
+.dockerdash-docker-container {
+  padding-bottom: 0.5em;
+  padding-top: 0.5em;
+}
+
+.dockerdash-docker-uptime {
+  text-align: right;
+}
+
+.dockerdash-docker-command {
+  font-family: monospace;
+  padding-left: 1em;
 }
